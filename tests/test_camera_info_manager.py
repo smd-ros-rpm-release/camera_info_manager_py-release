@@ -5,10 +5,11 @@
 Requires a rostest environment, allowing test cases to make
 set_camera_info service calls, where needed.
 """
+# enable some python3 compatibility options:
+from __future__ import absolute_import, print_function, unicode_literals
 
 PKG='camera_info_manager_py'
-import roslib
-
+import rospkg
 import sys
 import os
 import stat
@@ -22,7 +23,8 @@ g_package_filename = "/tests/" + g_test_name +".yaml"
 g_package_url = "package://" + g_package_name + g_package_filename
 g_package_name_url = "package://" + g_package_name + "/tests/${NAME}.yaml"
 
-g_ros_home = "/tmp"                    # unit test ${ROS_HOME} setting
+g_test_home = "/tmp"                   # unit test ${HOME} setting
+g_ros_home = g_test_home + "/.ros"     # unit test ${ROS_HOME} setting
 g_camera_name = "camera"
 g_default_yaml = g_ros_home + "/camera_info/" + g_camera_name + ".yaml"
 g_default_url = "file://${ROS_HOME}/camera_info/${NAME}.yaml"
@@ -100,7 +102,7 @@ def set_calibration(calib):
         rsp = proxy(calib)
         return rsp
     except rospy.ServiceException, e:
-        print "Service call failed: %s"%e
+        print("Service call failed: " + str(e))
         return None
 
 class TestCameraInfoManager(unittest.TestCase):
@@ -195,12 +197,21 @@ class TestCameraInfoManager(unittest.TestCase):
 
     def test_url_substitution_ros_home(self):
         """ Test URL ${ROS_HOME} variable resolution."""
-
-        # resolve ${ROS_HOME} with environment variable undefined
-        del os.environ["ROS_HOME"]
-        home = os.environ['HOME']
         name_url = "file://${ROS_HOME}/camera_info/test_camera.yaml"
-        exp_url = "file://" + home + "/.ros/camera_info/test_camera.yaml"
+
+        # resolve ${ROS_HOME} with neither environment variable nor
+        # $HOME defined (should leave the string unresolved)
+        os.environ["ROS_HOME"] = 'x'    # ensure existence before deleting
+        os.environ["HOME"] = 'x'
+        del os.environ["ROS_HOME"]
+        del os.environ["HOME"]
+        exp_url = name_url              # leaves variable unresolved
+        self.assertEqual(resolveURL(name_url, g_camera_name), exp_url)
+
+        # resolve ${ROS_HOME} with environment variable undefined, but
+        # $HOME defined
+        os.environ['HOME'] = g_test_home # set $HOME value for test
+        exp_url = "file://" + g_test_home + "/.ros/camera_info/test_camera.yaml"
         self.assertEqual(resolveURL(name_url, g_camera_name), exp_url)
 
         # resolve ${ROS_HOME} with environment variable defined
@@ -208,9 +219,14 @@ class TestCameraInfoManager(unittest.TestCase):
         exp_url = "file:///my/ros/home/camera_info/test_camera.yaml";
         self.assertEqual(resolveURL(name_url, g_camera_name), exp_url)
 
+        # try /tmp
+        os.environ["ROS_HOME"] = "/tmp"
+        exp_url = "file:///tmp/camera_info/test_camera.yaml";
+        self.assertEqual(resolveURL(name_url, g_camera_name), exp_url)
+
         # try the unit test default value
         os.environ["ROS_HOME"] = g_ros_home
-        exp_url = "file:///tmp/camera_info/test_camera.yaml";
+        exp_url = "file:///tmp/.ros/camera_info/test_camera.yaml";
         self.assertEqual(resolveURL(name_url, g_camera_name), exp_url)
 
     def test_url_substitution_strange_dollar_signs(self):
@@ -266,7 +282,8 @@ class TestCameraInfoManager(unittest.TestCase):
 
         # resolve known file in this package
         filename = getPackageFileName(g_package_url)
-        pkgPath = roslib.packages.get_pkg_dir(g_package_name)
+        rp = rospkg.RosPack()
+        pkgPath = rp.get_path(g_package_name)
         expected_filename = pkgPath + g_package_filename
         self.assertEqual(filename, expected_filename)
 
@@ -282,6 +299,29 @@ class TestCameraInfoManager(unittest.TestCase):
         cinfo = init_camera_info_manager()
         self.assertRaises(CameraInfoMissingError, cinfo.isCalibrated)
         self.assertRaises(CameraInfoMissingError, cinfo.getCameraInfo)
+
+    def test_get_info_without_environment(self):
+        """ Test ability to detect missing CameraInfo when neither
+        ${ROS_HOME} nor $HOME are defined."""
+
+        # undefine the environment variables
+        os.environ["ROS_HOME"] = 'x'    # ensure existence before deleting
+        os.environ["HOME"] = 'x'
+        del os.environ["ROS_HOME"]
+        del os.environ["HOME"]
+
+        # run the test
+        cinfo = init_camera_info_manager()
+        self.assertRaises(CameraInfoMissingError, cinfo.isCalibrated)
+        self.assertRaises(CameraInfoMissingError, cinfo.getCameraInfo)
+        self.assertEqual(cinfo.camera_info, None)
+        cinfo.loadCameraInfo()
+        self.assertEqual(parseURL(cinfo.getURL()), URL_empty)
+        self.assertEqual(cinfo.getCameraInfo(), CameraInfo())
+        self.assertFalse(cinfo.isCalibrated())
+
+        # restore test $HOME
+        os.environ['HOME'] = g_test_home
 
     def test_set_camera_name_info_invalidation(self):
         """ Test that setCameraName() invalidates camera info correctly."""
@@ -330,7 +370,8 @@ class TestCameraInfoManager(unittest.TestCase):
         """ Test loadCalibrationFile() function. """
 
         # try with an actual file in this directory
-        pkgPath = roslib.packages.get_pkg_dir(g_package_name)
+        rp = rospkg.RosPack()
+        pkgPath = rp.get_path(g_package_name)
         filename = pkgPath + g_package_filename
         ci = loadCalibrationFile(filename, g_camera_name)
         self.assertEqual(ci, expected_calibration())
@@ -344,6 +385,11 @@ class TestCameraInfoManager(unittest.TestCase):
         os.environ["ROS_HOME"] = g_ros_home
         delete_file(g_default_yaml)
         ci = loadCalibrationFile(g_default_yaml, g_camera_name)
+        self.assertEqual(ci, CameraInfo())
+
+        # try file name with ${ROS_HOME} unresolved
+        filename = "${ROS_HOME}/camera_info/" + g_camera_name + ".yaml"
+        ci = loadCalibrationFile(filename, g_camera_name)
         self.assertEqual(ci, CameraInfo())
 
     def test_get_uncalibrated_info(self):
@@ -453,8 +499,6 @@ def run_tests():
         rospy.signal_shutdown('test complete') # terminate the test node
 
 if __name__ == '__main__':
-
-    print str(sys.path)
 
     rospy.init_node("test_camera_info_manager")
 
