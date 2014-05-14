@@ -55,7 +55,7 @@ tracks:
     release_inc: '0'
     release_repo_url: git@github.com:ros-gbp/camera_info_manager_py-release.git
     release_tag: camera_info_manager_py-:{version}
-    ros_distro: hydro
+    ros_distro: indigo
     vcs_type: git
     vcs_uri: https://github.com/ros-perception/camera_info_manager_py.git
     version: :{auto}
