@@ -1,3 +1,22 @@
+## camera_info_manager_py (groovy) - 0.2.3-0
+
+The packages in the `camera_info_manager_py` repository were released into the `groovy` distro by running `/usr/bin/bloom-release camera_info_manager_py -r groovy -t groovy` on `Wed, 14 May 2014 12:25:56 -0000`
+
+The `camera_info_manager_py` package was released.
+
+Version of package(s) in repository `camera_info_manager_py`:
+- rosdistro version: `0.2.2-0`
+- old version: `0.2.2-0`
+- new version: `0.2.3-0`
+
+Versions of tools used:
+- bloom version: `0.5.7`
+- catkin_pkg version: `0.2.2`
+- rosdep version: `0.10.27`
+- rosdistro version: `0.3.5`
+- vcstools version: `0.1.33`
+
+
 ## camera_info_manager_py (hydro) - 0.2.3-0
 
 The packages in the `camera_info_manager_py` repository were released into the `hydro` distro by running `/usr/bin/bloom-release camera_info_manager_py -r hydro -t hydro` on `Wed, 14 May 2014 12:23:16 -0000`
