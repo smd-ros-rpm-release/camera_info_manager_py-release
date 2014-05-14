@@ -1,0 +1,12 @@
+Source: ros-indigo-camera-info-manager-py
+Section: misc
+Priority: extra
+Maintainer: Jack O'Quin <jack.oquin@gmail.com>
+Build-Depends: debhelper (>= 7.0.50~), ros-indigo-catkin, ros-indigo-rospy, ros-indigo-rostest, ros-indigo-rosunit, ros-indigo-sensor-msgs
+Homepage: http://ros.org/wiki/camera_info_manager_py
+Standards-Version: 3.9.2
+
+Package: ros-indigo-camera-info-manager-py
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, python-rospkg, python-yaml, ros-indigo-rospy, ros-indigo-sensor-msgs
+Description: Python interface for camera calibration information. This ROS package provides a CameraInfo interface for Python camera drivers similar to the C++ camera_info_manager package.
