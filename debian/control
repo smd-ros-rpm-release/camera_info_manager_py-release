@@ -1,0 +1,12 @@
+Source: ros-hydro-camera-info-manager-py
+Section: misc
+Priority: extra
+Maintainer: Jack O'Quin <jack.oquin@gmail.com>
+Build-Depends: debhelper (>= 7.0.50~), ros-hydro-catkin, ros-hydro-rospy, ros-hydro-rostest, ros-hydro-rosunit, ros-hydro-sensor-msgs
+Homepage: http://ros.org/wiki/camera_info_manager_py
+Standards-Version: 3.9.2
+
+Package: ros-hydro-camera-info-manager-py
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, python-rospkg, python-yaml, ros-hydro-rospy, ros-hydro-sensor-msgs
+Description: Python interface for camera calibration information. This ROS package provides a CameraInfo interface for Python camera drivers similar to the C++ camera_info_manager package.
